@@ -8,33 +8,33 @@
 #define MACADDRESS_EEPROM_FILE "/sys/devices/platform/ahb/ahb\:apb/" \
     "f008a000.i2c/i2c-10/10-0055/eeprom"
 
-void writeMacAddress(std::string port, std::string macAddress)
+void writeMacAddress(std::string* port, std::string* macAddress)
 {
-    if (port == "usb0_dev")
+    if (*port == "usb0_dev")
     {
-        FILE* pFile;
-        char* buffer = new char[macAddress.length() + 1];
-        std::strcpy(buffer, macAddress.c_str());
-        pFile = fopen("/tmp/usb0_dev", "w");
-        fwrite(buffer , sizeof(char), macAddress.length() + 1, pFile);
-        fclose(pFile);
+        std::FILE* pFile;
+        char* buffer = new char[macAddress->length() + 1];
+        std::strcpy(buffer, macAddress->c_str());
+        pFile = std::fopen("/tmp/usb0_dev", "w");
+        std::fwrite(buffer , sizeof(char), macAddress->length() + 1, pFile);
+        std::fclose(pFile);
         delete [] buffer;
     }
-    else if (port == "usb0_host")
+    else if (*port == "usb0_host")
     {
-        FILE* pFile;
-        char* buffer = new char[macAddress.length() + 1];
-        std::strcpy(buffer, macAddress.c_str());
-        pFile = fopen ("/tmp/usb0_host", "w");
-        fwrite(buffer , sizeof(char), macAddress.length() + 1, pFile);
-        fclose(pFile);
+        std::FILE* pFile;
+        char* buffer = new char[macAddress->length() + 1];
+        std::strcpy(buffer, macAddress->c_str());
+        pFile = std::fopen ("/tmp/usb0_host", "w");
+        std::fwrite(buffer , sizeof(char), macAddress->length() + 1, pFile);
+        std::fclose(pFile);
         delete [] buffer;
     }
     else
     {
-        system(("ip link set " +  port + " down").c_str());
-        system(("ip link set " +  port + " address " + macAddress).c_str());
-        system(("ip link set " +  port + " up").c_str());
+        std::system(("ip link set " +  *port + " down").c_str());
+        std::system(("ip link set " +  *port + " address " + *macAddress).c_str());
+        std::system(("ip link set " +  *port + " up").c_str());
     }
 }
 
@@ -42,11 +42,11 @@ void cleanupError(FILE* fruFilePointer)
 {
     if (fruFilePointer != NULL)
     {
-        fclose(fruFilePointer);
+        std::fclose(fruFilePointer);
     }
 }
 
-std::string macAddressAddOne(std::string macAddress)
+std::string macAddressAddOne(std::string* macAddress)
 {
     std::string ret;
     std::stringstream ss;
@@ -55,7 +55,7 @@ std::string macAddressAddOne(std::string macAddress)
     // convert each hex number into dec
     for (size_t i = 0; i < 6; i++)
     {
-        macAddressCarry[5 - i] = std::stoi(macAddress.substr(i * 3, 2), nullptr, 16);
+        macAddressCarry[5 - i] = std::stoi(macAddress->substr(i * 3, 2), nullptr, 16);
     }
     macAddressCarry[6] = 0;
 
@@ -93,7 +93,7 @@ int generateRandomMacAddress()
     std::string result[6];
     std::stringstream ss;
     int randomNumber = 0;
-    srand(time(NULL));
+    std::srand(std::time(NULL));
 
     // quanta computer mac address 00:1b:24:xx:xx:xx
     result[0] = "00";
@@ -103,11 +103,11 @@ int generateRandomMacAddress()
     {
         if (i == 5)
         {
-            randomNumber = rand() % 253;
+            randomNumber = std::rand() % 253;
         }
         else
         {
-            randomNumber = rand() % 256;
+            randomNumber = std::rand() % 256;
         }
         ss << std::setfill ('0') << std::setw(2) << std::hex << randomNumber;
         result[i] = ss.str();
@@ -124,7 +124,7 @@ int generateRandomMacAddress()
 
     for (size_t i = 1; i < 4; i++)
     {
-        macAddress[i] = macAddressAddOne(macAddress[i - 1]);
+        macAddress[i] = macAddressAddOne(macAddress + i - 1);
     }
 
     // set mac address
@@ -132,10 +132,10 @@ int generateRandomMacAddress()
     std::string port1 = "usb0_dev";
     std::string port2 = "usb0_host";
     std::string port3 = "eth0";
-    writeMacAddress(port0, macAddress[0]);
-    writeMacAddress(port1, macAddress[1]);
-    writeMacAddress(port2, macAddress[2]);
-    writeMacAddress(port3, macAddress[3]);
+    writeMacAddress(&port0, macAddress);
+    writeMacAddress(&port1, macAddress + 1);
+    writeMacAddress(&port2, macAddress + 2);
+    writeMacAddress(&port3, macAddress + 3);
 
     return -1;
 }

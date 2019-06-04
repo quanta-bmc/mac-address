@@ -9,7 +9,7 @@ int main()
     size_t macAddressNum = 4;
 
     // get eeprom data
-    FILE* fruFilePointer = fopen(MACADDRESS_EEPROM_FILE, "rb");
+    std::FILE* fruFilePointer = std::fopen(MACADDRESS_EEPROM_FILE, "rb");
     if (fruFilePointer == NULL)
     {
         std::cout << "Unable to open FRU file. Use random mac address instead." << std::endl;
@@ -18,7 +18,7 @@ int main()
     }
 
     // get size of file
-    if (fseek(fruFilePointer, 0, SEEK_END))
+    if (std::fseek(fruFilePointer, 0, SEEK_END))
     {
         std::cout << "Unable to seek FRU file. Use random mac address instead." << std::endl;
         cleanupError(fruFilePointer);
@@ -26,11 +26,11 @@ int main()
     }
 
     // read file
-    dataLen = ftell(fruFilePointer);
+    dataLen = std::ftell(fruFilePointer);
     uint8_t fruData[dataLen] = {0};
 
-    rewind(fruFilePointer);
-    bytesRead = fread(fruData, dataLen, 1, fruFilePointer);
+    std::rewind(fruFilePointer);
+    bytesRead = std::fread(fruData, dataLen, 1, fruFilePointer);
     if (bytesRead != 1)
     {
         std::cout << "Unable to read FRU file. Use random mac address instead." << std::endl;
@@ -38,7 +38,7 @@ int main()
         return generateRandomMacAddress();
     }
 
-    fclose(fruFilePointer);
+    std::fclose(fruFilePointer);
     fruFilePointer = NULL;
 
     // get offset
@@ -121,7 +121,7 @@ int main()
 
     for (size_t i = 1; i < macAddressNum; i++)
     {
-        macAddress[i] = macAddressAddOne(macAddress[i - 1]);
+        macAddress[i] = macAddressAddOne(macAddress + i - 1);
     }
 
     // set mac address
@@ -129,10 +129,10 @@ int main()
     std::string port1 = "usb0_dev";
     std::string port2 = "usb0_host";
     std::string port3 = "eth0";
-    writeMacAddress(port0, macAddress[0]);
-    writeMacAddress(port1, macAddress[1]);
-    writeMacAddress(port2, macAddress[2]);
-    writeMacAddress(port3, macAddress[3]);
+    writeMacAddress(&port0, macAddress);
+    writeMacAddress(&port1, macAddress + 1);
+    writeMacAddress(&port2, macAddress + 2);
+    writeMacAddress(&port3, macAddress + 3);
 
     return 0;
 }
