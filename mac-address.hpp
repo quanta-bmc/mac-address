@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <string>
 #include <cstring>
 #include <sstream>
@@ -16,6 +17,11 @@ void writeMacAddress(std::string* port, std::string* macAddress)
         char* buffer = new char[macAddress->length() + 1];
         std::strcpy(buffer, macAddress->c_str());
         pFile = std::fopen("/tmp/usb0_dev", "w");
+        if (!pFile)
+        {
+            std::perror("Fail to write usb0 device mac address.");
+            return;
+        }
         std::fwrite(buffer , sizeof(char), macAddress->length() + 1, pFile);
         std::fclose(pFile);
         delete [] buffer;
@@ -26,6 +32,11 @@ void writeMacAddress(std::string* port, std::string* macAddress)
         char* buffer = new char[macAddress->length() + 1];
         std::strcpy(buffer, macAddress->c_str());
         pFile = std::fopen ("/tmp/usb0_host", "w");
+        if (!pFile)
+        {
+            std::perror("Fail to write usb0 host mac address.");
+            return;
+        }
         std::fwrite(buffer , sizeof(char), macAddress->length() + 1, pFile);
         std::fclose(pFile);
         delete [] buffer;

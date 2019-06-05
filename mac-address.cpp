@@ -10,9 +10,9 @@ int main()
 
     // get eeprom data
     std::FILE* fruFilePointer = std::fopen(MACADDRESS_EEPROM_FILE, "rb");
-    if (fruFilePointer == NULL)
+    if (!fruFilePointer)
     {
-        std::cout << "Unable to open FRU file. Use random mac address instead." << std::endl;
+        std::perror("Unable to open FRU file. Use random mac address instead.");
         cleanupError(fruFilePointer);
         return generateRandomMacAddress();
     }
@@ -42,7 +42,7 @@ int main()
     fruFilePointer = NULL;
 
     // get offset
-    uint8_t offset[5];
+    uint8_t offset[5] = {0};
     for (size_t i = 0; i < 5; i++)
     {
         offset[i] = fruData[i + 1];
@@ -106,19 +106,19 @@ int main()
     std::stringstream ss;
     std::string macAddress[macAddressNum];
     macAddress[0] = "";
-    for (size_t i = 0; i < 5; i++)
+    for (size_t i = 0; i < 6; i++)
     {
         ss << std::hex << std::setfill('0');
 	    ss << std::hex << std::setw(2) << static_cast<int>(fruData[i + offset[0] * 8 + 3]);
         macAddress[0] += ss.str();
-        macAddress[0] += ":";
+        if (i < 5)
+        {
+            macAddress[0] += ":";
+        }
         ss.str(std::string());
     }
-    ss << std::hex << std::setfill('0');
-    ss << std::hex << std::setw(2) << static_cast<int>(fruData[5 + offset[0] * 8 + 3]);
-    macAddress[0] += ss.str();
-    ss.str(std::string());
 
+    // generate mac addresses
     for (size_t i = 1; i < macAddressNum; i++)
     {
         macAddress[i] = macAddressAddOne(macAddress + i - 1);
