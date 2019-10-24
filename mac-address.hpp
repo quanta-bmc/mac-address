@@ -5,9 +5,21 @@
 #include <iomanip>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 
-#define MACADDRESS_EEPROM_FILE "/sys/devices/platform/ahb/ahb\:apb/" \
-    "f008a000.i2c/i2c-10/10-0055/eeprom"
+#define macAddressConfigFile "/usr/share/mac-address/config.txt"
+
+std::string getMacAddressEEPROMFile()
+{
+    std::string macAddressInfo;
+    std::ifstream iFile;
+
+    iFile.open(macAddressConfigFile);
+    iFile >> macAddressInfo;
+    iFile.close();
+
+    return macAddressInfo;
+}
 
 void writeMacAddress(std::string* port, std::string* macAddress)
 {

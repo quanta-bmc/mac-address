@@ -9,7 +9,7 @@ int main()
     size_t macAddressNum = 4;
 
     // get eeprom data
-    std::FILE* fruFilePointer = std::fopen(MACADDRESS_EEPROM_FILE, "rb");
+    std::FILE* fruFilePointer = std::fopen(getMacAddressEEPROMFile().c_str(), "rb");
     if (!fruFilePointer)
     {
         std::perror("Unable to open FRU file. Use random mac address instead.");
