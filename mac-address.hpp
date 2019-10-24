@@ -95,6 +95,7 @@ void setMacAddress(std::map<std::string, std::string> map, \
         if (it->first.find("mac") != std::string::npos)
         {
             port[count] = it->second;
+            count++;
         } 
     }
     for (size_t i = 0; i < macAddressNum; i++)
