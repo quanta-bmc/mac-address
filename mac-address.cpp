@@ -7,14 +7,19 @@ int main()
     size_t dataLen = 0;
     size_t bytesRead = 0;
     size_t macAddressNum = 4;
+    std::map<std::string, std::string> macAddressConfig; 
 
     // get eeprom data
-    std::FILE* fruFilePointer = std::fopen(getMacAddressEEPROMFile().c_str(), "rb");
+    macAddressConfig = decodeMacAddressConfig();
+    std::stringstream sstream(macAddressConfig["numberMac"]);
+    sstream >> macAddressNum;
+    std::FILE* fruFilePointer = \
+        std::fopen(getMacAddressEEPROMPath(macAddressConfig).c_str(), "rb");
     if (!fruFilePointer)
     {
         std::perror("Unable to open FRU file. Use random mac address instead.");
         cleanupError(fruFilePointer);
-        return generateRandomMacAddress();
+        return generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
     // get size of file
@@ -22,7 +27,7 @@ int main()
     {
         std::cout << "Unable to seek FRU file. Use random mac address instead." << std::endl;
         cleanupError(fruFilePointer);
-        return generateRandomMacAddress();
+        return generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
     // read file
@@ -35,7 +40,7 @@ int main()
     {
         std::cout << "Unable to read FRU file. Use random mac address instead." << std::endl;
         cleanupError(fruFilePointer);
-        return generateRandomMacAddress();
+        return generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
     std::fclose(fruFilePointer);
@@ -51,7 +56,7 @@ int main()
     if (offset[0] == 0)
     {
         std::cout << "No internal use area. Use random mac address instead." << std::endl;
-        return generateRandomMacAddress();
+        return generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
     // get mac address end offset
@@ -74,7 +79,7 @@ int main()
     if (commonHeaderChecksum != 0)
     {
         std::cout << "Common header check sum error. Use random mac address instead." << std::endl;
-        return generateRandomMacAddress();
+        return generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
     // check sum
@@ -86,7 +91,7 @@ int main()
     if (checksum != 0)
     {
         std::cout << "Mac address check sum error. Use random mac address instead." << std::endl;
-        return generateRandomMacAddress();
+        return generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
     // get mac address num
@@ -99,7 +104,7 @@ int main()
     if (macAddressNum < 4)
     {
         std::cout << "Mac address number is less than 4. Use random mac address instead." << std::endl;
-        return generateRandomMacAddress();
+        return generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
     // read mac address
@@ -125,14 +130,7 @@ int main()
     }
 
     // set mac address
-    std::string port0 = "eth1";
-    std::string port1 = "usb0_dev";
-    std::string port2 = "usb0_host";
-    std::string port3 = "eth0";
-    writeMacAddress(&port0, macAddress);
-    writeMacAddress(&port1, macAddress + 1);
-    writeMacAddress(&port2, macAddress + 2);
-    writeMacAddress(&port3, macAddress + 3);
+    setMacAddress(macAddressConfig, macAddress, macAddressNum);
 
     return 0;
 }

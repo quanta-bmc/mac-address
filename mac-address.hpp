@@ -6,24 +6,46 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <map>
 
 #define macAddressConfigFile "/usr/share/mac-address/config.txt"
 
-std::string getMacAddressEEPROMFile()
+std::map<std::string, std::string> decodeMacAddressConfig()
 {
-    std::string macAddressInfo;
+    std::string line;
     std::ifstream iFile;
+    std::map<std::string, std::string> map;
 
     iFile.open(macAddressConfigFile);
-    iFile >> macAddressInfo;
-    iFile.close();
 
-    return macAddressInfo;
+    while (getline(iFile, line))
+    {
+        size_t num = 0;
+        num = line.find_first_of("=");
+        std::string item = line.substr(0, num);
+        std::string value = line.substr(num + 1);
+        map[item] = value;
+    }
+    iFile.close();
+    
+    return map;
 }
 
-void writeMacAddress(std::string* port, std::string* macAddress)
+std::string getMacAddressEEPROMPath(std::map<std::string, std::string> map)
 {
-    if (*port == "usb0_dev")
+    std::string macAddressPath;
+    std::string fruBusNum = map["fruBusNum"];
+    std::string fruAddr = map["fruAddr"].substr(2);
+    fruAddr = std::string(4 - fruAddr.length(), '0').append(fruAddr);
+
+    macAddressPath = "/sys/bus/i2c/devices/" + fruBusNum + "-" + fruAddr + "/eeprom";
+
+    return macAddressPath;
+}
+
+void writeMacAddress(std::string port, std::string* macAddress)
+{
+    if (port == "usb0_dev")
     {
         std::FILE* pFile;
         char* buffer = new char[macAddress->length() + 1];
@@ -38,7 +60,7 @@ void writeMacAddress(std::string* port, std::string* macAddress)
         std::fclose(pFile);
         delete [] buffer;
     }
-    else if (*port == "usb0_host")
+    else if (port == "usb0_host")
     {
         std::FILE* pFile;
         char* buffer = new char[macAddress->length() + 1];
@@ -55,9 +77,29 @@ void writeMacAddress(std::string* port, std::string* macAddress)
     }
     else
     {
-        std::system(("ip link set " +  *port + " down").c_str());
-        std::system(("ip link set " +  *port + " address " + *macAddress).c_str());
-        std::system(("ip link set " +  *port + " up").c_str());
+        std::system(("ip link set " +  port + " down").c_str());
+        std::system(("ip link set " +  port + " address " + *macAddress).c_str());
+        std::system(("ip link set " +  port + " up").c_str());
+    }
+}
+
+void setMacAddress(std::map<std::string, std::string> map, \
+    std::string* macAddress, size_t macAddressNum)
+{
+    std::string port[macAddressNum];
+    size_t count = 0;
+    std::map<std::string, std::string>::iterator it;
+
+    for (it = map.begin(); it != map.end(); it++ )
+    {
+        if (it->first.find("mac") != std::string::npos)
+        {
+            port[count] = it->second;
+        } 
+    }
+    for (size_t i = 0; i < macAddressNum; i++)
+    {
+        writeMacAddress(port[i], macAddress + i);
     }
 }
 
@@ -111,7 +153,8 @@ std::string macAddressAddOne(std::string* macAddress)
     return ret;
 }
 
-int generateRandomMacAddress()
+int generateRandomMacAddress(std::map<std::string, std::string> map, \
+    size_t macAddressNum)
 {
     std::string result[6];
     std::stringstream ss;
@@ -151,14 +194,7 @@ int generateRandomMacAddress()
     }
 
     // set mac address
-    std::string port0 = "eth1";
-    std::string port1 = "usb0_dev";
-    std::string port2 = "usb0_host";
-    std::string port3 = "eth0";
-    writeMacAddress(&port0, macAddress);
-    writeMacAddress(&port1, macAddress + 1);
-    writeMacAddress(&port2, macAddress + 2);
-    writeMacAddress(&port3, macAddress + 3);
+    setMacAddress(map, macAddress, macAddressNum);
 
     return -1;
 }
