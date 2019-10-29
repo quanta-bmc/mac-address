@@ -24,17 +24,19 @@ std::map<std::string, std::string> decodeMacAddressConfig()
     {
         std::cerr << "Unable to get mac address config." << std::endl;
     }
-
-    while (getline(iFile, line))
+    else
     {
-        size_t num = 0;
-        num = line.find_first_of("=");
-        std::string item = line.substr(0, num);
-        std::string value = line.substr(num + 1);
-        map[item] = value;
+        while (getline(iFile, line))
+        {
+            size_t num = 0;
+            num = line.find_first_of("=");
+            std::string item = line.substr(0, num);
+            std::string value = line.substr(num + 1);
+            map[item] = value;
+            iFile.close();
+        }
     }
-    iFile.close();
-    
+
     return map;
 }
 
