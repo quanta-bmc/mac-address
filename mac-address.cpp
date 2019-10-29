@@ -7,6 +7,10 @@ int main()
     macAddressConfig = decodeMacAddressConfig();
 
     // check config
+    if (macAddressConfig.empty())
+    {
+        return 0;
+    }
     if (!isConfigValid(macAddressConfig))
     {
         std::cerr << "Config file format is wrong. \

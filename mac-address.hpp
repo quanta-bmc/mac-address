@@ -11,6 +11,7 @@
 
 #define macAddressConfigFile "/usr/share/mac-address/config.txt"
 #define SUCCESS 0
+#define FAIL -1
 
 std::map<std::string, std::string> decodeMacAddressConfig()
 {
@@ -22,8 +23,6 @@ std::map<std::string, std::string> decodeMacAddressConfig()
     if (!iFile.is_open())
     {
         std::cerr << "Unable to get mac address config." << std::endl;
-        iFile.close();
-        exit(EXIT_FAILURE);
     }
 
     while (getline(iFile, line))
@@ -253,7 +252,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
         std::cerr << "Unable to get FRU. Use random mac address instead." \
             << std::endl;
         cleanupError(fruFilePointer);
-        return -1;
+        return FAIL;
     }
 
     // get size of file
@@ -261,7 +260,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     {
         std::cout << "Unable to seek FRU file. Use random mac address instead." << std::endl;
         cleanupError(fruFilePointer);
-        return -1;
+        return FAIL;
     }
 
     // read file
@@ -278,7 +277,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
         std::cerr << "Unable to read FRU file. Use random mac address instead." \
             << std::endl;
         cleanupError(fruFilePointer);
-        return -1;
+        return FAIL;
     }
 
     std::fclose(fruFilePointer);
@@ -295,7 +294,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     {
         std::cerr << "No internal use area. Use random mac address instead." \
             << std::endl;
-        return -1;
+        return FAIL;
     }
 
     // get mac address end offset
@@ -319,7 +318,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     {
         std::cerr << "Common header check sum error. Use random mac address instead." \
             << std::endl;
-        return -1;
+        return FAIL;
     }
 
     // check sum
@@ -332,7 +331,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     {
         std::cerr << "Mac address check sum error. Use random mac address instead." \
             << std::endl;
-        return -1;
+        return FAIL;
     }
 
     // get mac address num
@@ -346,7 +345,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     {
         std::cerr << "Mac address num is mismatched. Use random mac address instead." \
             << std::endl;
-        return -1;
+        return FAIL;
     }
 
     // read mac address
@@ -375,5 +374,5 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     // set mac address
     setMacAddress(macAddressConfig, macAddress, macAddressNum);
 
-    return 0;
+    return SUCCESS;
 }
