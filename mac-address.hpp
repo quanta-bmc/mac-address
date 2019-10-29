@@ -34,8 +34,8 @@ std::map<std::string, std::string> decodeMacAddressConfig()
             std::string value = line.substr(num + 1);
             map[item] = value;
         }
+        iFile.close();
     }
-    iFile.close();
 
     return map;
 }
