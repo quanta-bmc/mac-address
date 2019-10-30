@@ -54,20 +54,18 @@ std::string getMacAddressEEPROMPath(std::map<std::string, std::string> map)
 
 bool isConfigValid(std::map<std::string, std::string> map)
 {
+    if (map.empty())
+    {
+        return false;
+    }
+
     bool result = true;
     size_t macAddressNum = 0;
     size_t macAddressNameNum = 0;
     std::stringstream sstream;
 
-    if (map.empty())
-    {
-        result = false;
-    }
-    else
-    {
-        sstream << map["numberMac"];
-        sstream >> macAddressNum;
-    }
+    sstream << map["numberMac"];
+    sstream >> macAddressNum;
 
     std::map<std::string, std::string>::iterator it;
     for (it = map.begin(); it != map.end(); it++ )
