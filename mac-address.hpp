@@ -336,19 +336,13 @@ int run(std::map<std::string, std::string> macAddressConfig, \
         return FAIL;
     }
 
-    // get mac address num
+    // get mac address num from FRU
     size_t count = macAddressEndOffset * 8 - 2;
     while (fruData[count] == 0xff)
     {
         count--;
     }
-
-    if (macAddressNum != (size_t)fruData[count])
-    {
-        std::cerr << "Mac address num is mismatched. Use random mac address instead." \
-            << std::endl;
-        return FAIL;
-    }
+    macAddressNum = (size_t)fruData[count];
 
     // read mac address
     std::stringstream ss;
