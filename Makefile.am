@@ -4,3 +4,7 @@ bin_PROGRAMS = mac-address
 
 mac_address_SOURCES = mac-address.cpp
 mac_address_LDFLAGS = -lstdc++fs
+
+if HAVE_SYSTEMD
+    systemdsystemunit_DATA = mac-address.service
+endif
