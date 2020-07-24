@@ -2,6 +2,9 @@
 
 int main()
 {
+    std::fstream logfile;
+    logfile.open("/tmp/mac-address_log.txt", std::ios::out | std::ios::trunc);
+
     // get config data
     std::map<std::string, std::string> macAddressConfig;
     macAddressConfig = decodeMacAddressConfig();
@@ -11,6 +14,7 @@ int main()
     {
         std::cerr << "Config file format is wrong. \
             No mac address is generated." << std::endl;
+        logfile.close();
         return 0;
     }
 
@@ -21,10 +25,11 @@ int main()
     sstream >> macAddressNum;
 
     // run
-    if (run(macAddressConfig, macAddressNum) != SUCCESS)
+    if (run(macAddressConfig, macAddressNum, logfile) != SUCCESS)
     {
         generateRandomMacAddress(macAddressConfig, macAddressNum);
     }
 
+    logfile.close();
     return 0;
 }
