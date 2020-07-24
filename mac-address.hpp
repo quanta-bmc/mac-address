@@ -251,8 +251,13 @@ void generateRandomMacAddress(std::map<std::string, std::string> map, \
 }
 
 int run(std::map<std::string, std::string> macAddressConfig, \
-    size_t macAddressNum)
+    size_t macAddressNum, std::fstream &logfile)
 {
+    int retryTimes = 1;
+
+checksumretry:
+    logfile << "check times: " << retryTimes << "\n";
+
     // get eeprom data
     std::FILE* fruFilePointer = \
         std::fopen(getMacAddressEEPROMPath(macAddressConfig).c_str(), "rb");
@@ -267,7 +272,7 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     // get size of file
     if (std::fseek(fruFilePointer, 0, SEEK_END))
     {
-        std::cout << "Unable to seek FRU file. Use random mac address instead." << std::endl;
+        std::cerr << "Unable to seek FRU file. Use random mac address instead." << std::endl;
         cleanupError(fruFilePointer);
         return FAIL;
     }
@@ -291,6 +296,13 @@ int run(std::map<std::string, std::string> macAddressConfig, \
 
     std::fclose(fruFilePointer);
     fruFilePointer = NULL;
+
+    logfile << "Begin print FRU Data\n";
+    for (int i = 0; i < dataLen; i++)
+    {
+        logfile << std::setw(2) << std::setfill('0') << std::hex << static_cast<unsigned int>(fruData[i]) << " ";
+        if ((i + 1) % 16 == 0) logfile << "\n";
+    }
 
     // get offset
     uint8_t offset[5] = {0};
@@ -318,6 +330,8 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     }
 
     // common header check sum
+    logfile << "begin common header check sum\n";
+
     uint8_t commonHeaderChecksum = 0;
     for (size_t i = 0; i < 8; i++)
     {
@@ -338,6 +352,12 @@ int run(std::map<std::string, std::string> macAddressConfig, \
     }
     if (checksum != 0)
     {
+        if (retryTimes < 5)
+        {
+            retryTimes++;
+            logfile << "Mac address check sum error. Retry!\n\n";
+            goto checksumretry;
+        }
         std::cerr << "Mac address check sum error. Use random mac address instead." \
             << std::endl;
         return FAIL;
