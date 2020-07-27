@@ -298,7 +298,7 @@ checksumretry:
     fruFilePointer = NULL;
 
     logfile << "Begin print FRU Data\n";
-    for (int i = 0; i < dataLen; i++)
+    for (int i = 0; i < 256; i++)
     {
         logfile << std::setw(2) << std::setfill('0') << std::hex << static_cast<unsigned int>(fruData[i]) << " ";
         if ((i + 1) % 16 == 0) logfile << "\n";
