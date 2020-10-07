@@ -36,6 +36,7 @@ if (ENABLE_TEST)
     target_link_libraries (${testapp} gtest gtest_main -lpthread stdc++fs)
 
     add_test (NAME ${testapp} COMMAND ${testapp} )
+    install (TARGETS ${testapp} DESTINATION bin)
 endif ()
 
 # Systemd service
