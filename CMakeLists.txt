@@ -21,12 +21,6 @@ target_link_libraries (${app} -lstdc++fs)
 
 install(TARGETS ${app} DESTINATION bin)
 
-# Systemd service
-set(SYSTEMD_TARGET ${-DSYSTEMD_TARGET})
-configure_file (${app}.service.in ${app}.service)
-install (FILES ${PROJECT_BINARY_DIR}/mac-address.service DESTINATION
-               ${SYSTEMD_SYSTEMUNITDIR})
-
 option (ENABLE_TEST "Enable Google Test" ON)
 # Test unit of mac-address
 if (ENABLE_TEST)
@@ -43,4 +37,14 @@ if (ENABLE_TEST)
 
     add_test (NAME ${testapp} COMMAND ${testapp} )
 endif ()
+
+# Systemd service
+set (SYSTEMD_SYSTEMUNITDIR /lib/systemd/system/)
+
+set (SYSTEMD_TARGET ${-DSYSTEMD_TARGET})
+if (NOT SYSTEMD_TARGET)
+    set (SYSTEMD_TARGET multi-user.target)
+endif()
+configure_file (${app}.service.in ${app}.service)
+install (FILES ${PROJECT_BINARY_DIR}/mac-address.service DESTINATION ${SYSTEMD_SYSTEMUNITDIR})
 
