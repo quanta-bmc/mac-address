@@ -42,7 +42,6 @@ endif ()
 # Systemd service
 set (SYSTEMD_SYSTEMUNITDIR /lib/systemd/system/)
 
-set (SYSTEMD_TARGET ${-DSYSTEMD_TARGET})
 if (NOT SYSTEMD_TARGET)
     set (SYSTEMD_TARGET multi-user.target)
 endif()
