@@ -5,6 +5,7 @@ Wants=network-pre.target
 
 [Service]
 Type=oneshot
+ExecStartPre=/usr/bin/find-fru-bus.sh
 ExecStart=/usr/bin/mac-address
 
 [Install]
