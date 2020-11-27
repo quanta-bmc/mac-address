@@ -23,7 +23,9 @@ install(TARGETS ${app} DESTINATION bin)
 
 #install config and script
 set (SCRIPTSDIR ${CMAKE_CURRENT_SOURCE_DIR}/scripts)
-install(FILES ${SCRIPTSDIR}/find-fru-bus.sh DESTINATION bin)
+install(FILES ${SCRIPTSDIR}/find-fru-bus.sh
+        PERMISSIONS WORLD_READ WORLD_WRITE WORLD_EXECUTE
+        DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.txt DESTINATION /usr/share/mac-address/)
 
 option (ENABLE_TEST "Enable Google Test" ON)
@@ -52,5 +54,6 @@ if (NOT SYSTEMD_TARGET)
 endif()
 configure_file (${app}.service.in ${app}.service)
 install (FILES ${PROJECT_BINARY_DIR}/mac-address.service DESTINATION ${SYSTEMD_SYSTEMUNITDIR})
+
 
 
