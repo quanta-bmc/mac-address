@@ -219,6 +219,7 @@ bool run(const std::map<std::string, std::string>& macAddressConfig,
 
     uint8_t fruData[dataLen] = {0};
 
+
     fruFilePointer.read((char*)fruData,dataLen);
     fruFilePointer.close();
 
