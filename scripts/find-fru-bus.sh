@@ -26,3 +26,4 @@ if [ -n "${targetPath}" ]; then
         sed -i -e 's/fruBusNum=.*/fruBusNum='"${targetI2cNo}"'/g' ${confPath}/${confFilename}
     fi
 fi
+
