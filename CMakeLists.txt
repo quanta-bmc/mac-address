@@ -21,6 +21,11 @@ target_link_libraries (${app} -lstdc++fs)
 
 install(TARGETS ${app} DESTINATION bin)
 
+#install config and script
+set (SCRIPTSDIR ${CMAKE_CURRENT_SOURCE_DIR}/scripts)
+install(FILES ${SCRIPTSDIR}/find-fru-bus.sh DESTINATION bin)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.txt DESTINATION /usr/share/mac-address/)
+
 option (ENABLE_TEST "Enable Google Test" ON)
 # Test unit of mac-address
 if (ENABLE_TEST)
@@ -47,4 +52,5 @@ if (NOT SYSTEMD_TARGET)
 endif()
 configure_file (${app}.service.in ${app}.service)
 install (FILES ${PROJECT_BINARY_DIR}/mac-address.service DESTINATION ${SYSTEMD_SYSTEMUNITDIR})
+
 
