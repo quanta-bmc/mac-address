@@ -9,146 +9,107 @@
 #include <iostream>
 #include <map>
 
-#define macAddressConfigFile "/usr/share/mac-address/config.txt"
-#define SUCCESS 0
-#define FAIL -1
+constexpr char const* macAddressConfigFile =
+                                    "/usr/share/mac-address/config.txt";
+constexpr char const* sysI2cDevPath = "/sys/bus/i2c/devices/";
 
-std::map<std::string, std::string> decodeMacAddressConfig()
+std::map<std::string, std::string> decodeMacAddressConfig(void)
 {
     std::string line;
-    std::ifstream iFile;
-    std::map<std::string, std::string> map;
+    std::map<std::string, std::string> macConf;
 
-    iFile.open(macAddressConfigFile);
-    if (!iFile.is_open())
+    std::ifstream confFile;
+    confFile.open(macAddressConfigFile, std::ifstream::in);
+    if (!confFile.is_open())
     {
         std::cerr << "Unable to get mac address config." << std::endl;
     }
     else
     {
-        while (getline(iFile, line))
+        while (getline(confFile, line))
         {
             size_t num = 0;
             num = line.find_first_of("=");
             std::string item = line.substr(0, num);
             std::string value = line.substr(num + 1);
-            map[item] = value;
+            macConf[item] = value;
         }
-        iFile.close();
+        confFile.close();
     }
 
-    return map;
+    return macConf;
 }
 
-std::string getMacAddressEEPROMPath(std::map<std::string, std::string> map)
+std::string getMacAddressEEPROMPath(
+                        const std::map<std::string, std::string>& macConf)
 {
     std::string macAddressPath;
-    std::string fruBusNum = map["fruBusNum"];
-    std::string fruAddr = map["fruAddr"].substr(2);
-    fruAddr = std::string(4 - fruAddr.length(), '0').append(fruAddr);
+    std::string fruBusNum = macConf.find("fruBusNum")->second;
+    std::string fruAddr =
+            macConf.find("fruAddr")->second.substr(2); // Ignore hex prefix(0x)
 
-    macAddressPath = "/sys/bus/i2c/devices/" + fruBusNum + "-" + fruAddr + "/eeprom";
-
+    macAddressPath = sysI2cDevPath + fruBusNum + "-00" + fruAddr + "/eeprom";
     return macAddressPath;
 }
 
-bool isConfigValid(std::map<std::string, std::string> map)
+/* Check these parameters: fruBusNum, fruAddr, numberMac and mac* not empty. */
+bool isConfigValid(const std::map<std::string, std::string>& macConf)
 {
-    if (map.empty())
+    if (macConf.empty())
     {
+        std::cerr << "MAC information is empty." << '\n';
         return false;
     }
 
-    bool result = true;
-    size_t macAddressNum = 0;
-    size_t macAddressNameNum = 0;
-    std::stringstream sstream;
-
-    sstream << map["numberMac"];
-    sstream >> macAddressNum;
-
-    std::map<std::string, std::string>::iterator it;
-    for (it = map.begin(); it != map.end(); it++ )
-    {
-        if (it->first.find("mac") != std::string::npos)
-        {
-            macAddressNameNum++;
+    for(const auto& it : macConf){
+        if(it.second.empty()){
+            std::cerr << it.first << "is empty" << '\n'
+                << "MAC information is corrupted." << '\n';
+            return false;
         }
     }
 
-    if (map["fruBusNum"]=="" || map["fruAddr"]=="" || map["numberMac"]=="" || \
-        macAddressNameNum!=macAddressNum)
-    {
-        result = false;
-    }
-    else
-    {
-        for (size_t i = 1; i <= macAddressNum; i++)
-        {
-            if (map["mac" + std::to_string(i)] == "")
-            {
-                result = false;
-            }
-        }
-    }
-
-    return result;
+    return true;
 }
 
-void writeMacAddress(std::string port, std::string* macAddress)
+void writeMacAddress(const std::string& port, std::string* macAddress)
 {
-    if (port == "usb0_dev")
+    std::string tmpMacFileName = "/tmp/" + port;
+    if (port == "usb0_dev" || port == "usb0_host")
     {
-        std::FILE* pFile;
-        char* buffer = new char[macAddress->length() + 1];
-        std::strcpy(buffer, macAddress->c_str());
-        pFile = std::fopen("/tmp/usb0_dev", "w");
-        if (!pFile)
-        {
-            std::cerr << "Fail to write usb0 device mac address." << std::endl;
+        std::fstream tmpMacFile;
+        tmpMacFile.open(tmpMacFileName,std::ios::out | std::ios::trunc);
+        if(!tmpMacFile.is_open()){
+            std::cerr << "Can't open " << tmpMacFileName << '\n';
             return;
         }
-        std::fwrite(buffer , sizeof(char), macAddress->length() + 1, pFile);
-        std::fclose(pFile);
-        delete [] buffer;
-    }
-    else if (port == "usb0_host")
-    {
-        std::FILE* pFile;
-        char* buffer = new char[macAddress->length() + 1];
-        std::strcpy(buffer, macAddress->c_str());
-        pFile = std::fopen ("/tmp/usb0_host", "w");
-        if (!pFile)
-        {
-            std::cerr << "Fail to write usb0 host mac address." << std::endl;
-            return;
-        }
-        std::fwrite(buffer , sizeof(char), macAddress->length() + 1, pFile);
-        std::fclose(pFile);
-        delete [] buffer;
+        tmpMacFile << *macAddress;
+        tmpMacFile.close();
     }
     else
     {
         std::system(("ip link set " +  port + " down").c_str());
-        std::system(("ip link set " +  port + " address " + *macAddress).c_str());
+        std::system(
+            ("ip link set " +  port + " address " + *macAddress).c_str());
         std::system(("ip link set " +  port + " up").c_str());
     }
+    return;
 }
 
-void setMacAddress(std::map<std::string, std::string> map, \
+void setMacAddress(const std::map<std::string, std::string>& macConf,
     std::string* macAddress, size_t macAddressNum)
 {
     std::string port[macAddressNum];
     size_t count = 0;
     std::map<std::string, std::string>::iterator it;
 
-    for (it = map.begin(); it != map.end(); it++ )
+    for (const auto& it : macConf )
     {
-        if (it->first.find("mac") != std::string::npos)
+        if (it.first.find("mac") != std::string::npos)
         {
-            port[count] = it->second;
+            port[count] = it.second;
             count++;
-        } 
+        }
     }
     for (size_t i = 0; i < macAddressNum; i++)
     {
@@ -156,15 +117,7 @@ void setMacAddress(std::map<std::string, std::string> map, \
     }
 }
 
-void cleanupError(FILE* fruFilePointer)
-{
-    if (fruFilePointer != NULL)
-    {
-        std::fclose(fruFilePointer);
-    }
-}
-
-std::string macAddressAddOne(std::string* macAddress)
+std::string macAddressAddOne(const std::string& macAddress)
 {
     std::string ret;
     std::stringstream ss;
@@ -173,7 +126,8 @@ std::string macAddressAddOne(std::string* macAddress)
     // convert each hex number into dec
     for (size_t i = 0; i < 6; i++)
     {
-        macAddressCarry[5 - i] = std::stoi(macAddress->substr(i * 3, 2), nullptr, 16);
+        macAddressCarry[5 - i] =
+            std::stoi(macAddress.substr(i * 3, 2), nullptr, 16);
     }
     macAddressCarry[6] = 0;
 
@@ -191,22 +145,19 @@ std::string macAddressAddOne(std::string* macAddress)
     std::string result[6];
     for (size_t i = 0; i < 6; i++)
     {
-        ss << std::setfill ('0') << std::setw(2) << std::hex << macAddressCarry[5 - i];
+        ss << std::setfill ('0') << std::setw(2) << std::hex <<
+                                                        macAddressCarry[5 - i];
         result[i] = ss.str();
         ss.str(std::string());
     }
 
-    ret = (result[0] + ":" + \
-        result[1] + ":" + \
-        result[2] + ":" + \
-        result[3] + ":" + \
-        result[4] + ":" + \
-        result[5]).c_str();
+    ret = result[0] + ":" + result[1] + ":" + result[2] + ":" + result[3]+ ":" +
+            result[4] + ":" + result[5];
 
     return ret;
 }
 
-void generateRandomMacAddress(std::map<std::string, std::string> map, \
+void generateRandomMacAddress(std::map<std::string, std::string> map,
     size_t macAddressNum)
 {
     std::string result[6];
@@ -234,88 +185,56 @@ void generateRandomMacAddress(std::map<std::string, std::string> map, \
     }
 
     std::string macAddress[4];
-    macAddress[0] = (result[0] + ":" + \
-        result[1] + ":" + \
-        result[2] + ":" + \
-        result[3] + ":" + \
-        result[4] + ":" + \
-        result[5]).c_str();
+    macAddress[0] = result[0] + ":" + result[1] + ":" + result[2] + ":" +
+                    result[3] + ":" + result[4] + ":" + result[5];
 
     for (size_t i = 1; i < 4; i++)
     {
-        macAddress[i] = macAddressAddOne(macAddress + i - 1);
+        macAddress[i] = macAddressAddOne(macAddress[i - 1]);
     }
 
     // set mac address
     setMacAddress(map, macAddress, macAddressNum);
 }
 
-int run(std::map<std::string, std::string> macAddressConfig, \
-    size_t macAddressNum, std::fstream &logfile)
+bool run(const std::map<std::string, std::string>& macAddressConfig,
+    size_t macAddressNum)
 {
-    int retryTimes = 1;
-
-checksumretry:
-    logfile << "check times: " << retryTimes << "\n";
-
     // get eeprom data
-    std::FILE* fruFilePointer = \
-        std::fopen(getMacAddressEEPROMPath(macAddressConfig).c_str(), "rb");
-    if (!fruFilePointer)
+    std::ifstream fruFilePointer;
+    fruFilePointer.open(getMacAddressEEPROMPath(macAddressConfig)
+                                    ,std::ifstream::binary | std::ifstream::in);
+    if (!fruFilePointer.is_open())
     {
-        std::cerr << "Unable to get FRU. Use random mac address instead." \
+        std::cerr << "Unable to get FRU. Use random mac address instead."
             << std::endl;
-        cleanupError(fruFilePointer);
-        return FAIL;
+        fruFilePointer.close();
+        return false;
     }
 
     // get size of file
-    if (std::fseek(fruFilePointer, 0, SEEK_END))
-    {
-        std::cerr << "Unable to seek FRU file. Use random mac address instead." << std::endl;
-        cleanupError(fruFilePointer);
-        return FAIL;
-    }
+    fruFilePointer.seekg(0,fruFilePointer.end);
+    size_t dataLen = fruFilePointer.tellg();
+    fruFilePointer.seekg(0,fruFilePointer.beg);
 
-    // read file
-    size_t dataLen = 0;
-    size_t bytesRead = 0;
-
-    dataLen = std::ftell(fruFilePointer);
     uint8_t fruData[dataLen] = {0};
 
-    std::rewind(fruFilePointer);
-    bytesRead = std::fread(fruData, dataLen, 1, fruFilePointer);
-    if (bytesRead != 1)
-    {
-        std::cerr << "Unable to read FRU file. Use random mac address instead." \
-            << std::endl;
-        cleanupError(fruFilePointer);
-        return FAIL;
-    }
 
-    std::fclose(fruFilePointer);
-    fruFilePointer = NULL;
-
-    logfile << "Begin print FRU Data\n";
-    for (int i = 0; i < 256; i++)
-    {
-        logfile << std::setw(2) << std::setfill('0') << std::hex << static_cast<unsigned int>(fruData[i]) << " ";
-        if ((i + 1) % 16 == 0) logfile << "\n";
-    }
+    fruFilePointer.read((char*)fruData,dataLen);
+    fruFilePointer.close();
 
     // get offset
     uint8_t offset[5] = {0};
     for (size_t i = 0; i < 5; i++)
     {
-        offset[i] = fruData[i + 1];
+        offset[i] = fruData[i + 1]; // Ignore Format Version field
     }
 
     if (offset[0] == 0)
     {
-        std::cerr << "No internal use area. Use random mac address instead." \
+        std::cerr << "No internal use area. Use random mac address instead."
             << std::endl;
-        return FAIL;
+        return false;
     }
 
     // get mac address end offset
@@ -329,9 +248,6 @@ checksumretry:
         }
     }
 
-    // common header check sum
-    logfile << "begin common header check sum\n";
-
     uint8_t commonHeaderChecksum = 0;
     for (size_t i = 0; i < 8; i++)
     {
@@ -339,9 +255,9 @@ checksumretry:
     }
     if (commonHeaderChecksum != 0)
     {
-        std::cerr << "Common header check sum error. Use random mac address instead." \
-            << std::endl;
-        return FAIL;
+        std::cerr << "Common header check sum error. \
+            Use random mac address instead." << std::endl;
+        return false;
     }
 
     // check sum
@@ -352,15 +268,7 @@ checksumretry:
     }
     if (checksum != 0)
     {
-        if (retryTimes < 5)
-        {
-            retryTimes++;
-            logfile << "Mac address check sum error. Retry!\n\n";
-            goto checksumretry;
-        }
-        std::cerr << "Mac address check sum error. Use random mac address instead." \
-            << std::endl;
-        return FAIL;
+        return false;
     }
 
     // get mac address num from FRU
@@ -378,7 +286,7 @@ checksumretry:
     for (size_t i = 0; i < 6; i++)
     {
         ss << std::hex << std::setfill('0');
-	    ss << std::hex << std::setw(2) << \
+	    ss << std::hex << std::setw(2) <<
             static_cast<int>(fruData[i + offset[0] * 8 + 3]);
         macAddress[0] += ss.str();
         if (i < 5)
@@ -391,11 +299,12 @@ checksumretry:
     // generate mac addresses
     for (size_t i = 1; i < macAddressNum; i++)
     {
-        macAddress[i] = macAddressAddOne(macAddress + i - 1);
+        macAddress[i] = macAddressAddOne(macAddress[i - 1]);
     }
 
     // set mac address
     setMacAddress(macAddressConfig, macAddress, macAddressNum);
 
-    return SUCCESS;
+    return true;
 }
+

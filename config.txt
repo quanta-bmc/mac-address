@@ -1,0 +1,8 @@
+eeprom=bmc_fru_1
+fruBusNum=14
+fruAddr=0x55
+numberMac=4
+mac1=eth1
+mac2=usb0_dev
+mac3=usb0_host
+mac4=eth0
