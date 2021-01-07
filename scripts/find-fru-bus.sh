@@ -8,22 +8,22 @@ if [ ! -f "${confPath}/${confFilename}" ]; then
     exit 0
 fi
 
-tmp=$(grep "eeprom=" ${confPath}/${confFilename})
-if [ -z "${tmp}" ]; then
+configTargetName=$(grep "eeprom=" ${confPath}/${confFilename})
+if [ -z "${configTargetName}" ]; then
     exit 0
 fi
 
-targetName="${tmp#*eeprom=}"
+targetName="${configTargetName#*eeprom=}"
 targetPath=$(grep -xl "${targetName}" /sys/bus/i2c/devices/*/of_node/name)
 
 # Get target i2c number
 if [ -n "${targetPath}" ]; then
-    targetI2cNo=${targetPath%-00*}
-    targetI2cNo=${targetI2cNo#*devices/}
+    targetI2CNum=${targetPath%-00*}
+    targetI2CNum=${targetI2CNum#*devices/}
 
     # Modify config.txt
-    if [ -n "${targetI2cNo}" ]; then
-        sed -i -e 's/fruBusNum=.*/fruBusNum='"${targetI2cNo}"'/g' ${confPath}/${confFilename}
+    if [ -n "${targetI2CNum}" ]; then
+        sed -i -e 's/fruBusNum=.*/fruBusNum='"${targetI2CNum}"'/g' ${confPath}/${confFilename}
     fi
 fi
 
