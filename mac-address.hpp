@@ -28,6 +28,10 @@ std::map<std::string, std::string> decodeMacAddressConfig(void)
     {
         while (getline(confFile, line))
         {
+            if (line.size() == 0)
+            {
+                continue;
+            }
             size_t num = 0;
             num = line.find_first_of("=");
             std::string item = line.substr(0, num);
