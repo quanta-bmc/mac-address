@@ -17,7 +17,6 @@ std::map<std::string, std::string> decodeMacAddressConfig(void)
 {
     std::string line;
     std::map<std::string, std::string> macConf;
-
     std::ifstream confFile;
     confFile.open(macAddressConfigFile, std::ifstream::in);
     if (!confFile.is_open())
