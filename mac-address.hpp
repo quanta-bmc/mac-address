@@ -96,10 +96,19 @@ void writeMacAddress(const std::string& port, std::string* macAddress)
     }
     else
     {
-        std::system(("ip link set " +  port + " down").c_str());
-        std::system(
-            ("ip link set " +  port + " address " + *macAddress).c_str());
-        std::system(("ip link set " +  port + " up").c_str());
+        if(std::system(("ip link set " +  port + " down").c_str())){
+            std::cerr << "Failed to run ip link set " <<  port <<
+                " down" << '\n';
+        }
+        if(std::system(("ip link set " +  port + " address " +
+            *macAddress).c_str())) {
+            std::cerr << "Failed to run ip link set " <<  port <<
+                " address" << '\n';
+        }
+        if (std::system(("ip link set " +  port + " up").c_str())){
+            std::cerr << "Failed to run ip link set " <<  port <<
+                " up" << '\n';
+        }
     }
     return;
 }
