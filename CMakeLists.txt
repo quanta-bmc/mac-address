@@ -47,13 +47,11 @@ if (ENABLE_TEST)
 endif ()
 
 # Systemd service
-set (SYSTEMD_SYSTEMUNITDIR /lib/systemd/system/)
+find_package (PkgConfig REQUIRED)
+pkg_get_variable(SYSTEMD_SYSTEM_UNIT_DIR systemd systemdsystemunitdir)
 
 if (NOT SYSTEMD_TARGET)
     set (SYSTEMD_TARGET multi-user.target)
 endif()
 configure_file (${app}.service.in ${app}.service)
-install (FILES ${PROJECT_BINARY_DIR}/mac-address.service DESTINATION ${SYSTEMD_SYSTEMUNITDIR})
-
-
-
+install (FILES ${PROJECT_BINARY_DIR}/mac-address.service DESTINATION ${SYSTEMD_SYSTEM_UNIT_DIR})
